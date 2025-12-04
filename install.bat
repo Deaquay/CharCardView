@@ -25,16 +25,33 @@ if exist "exiftool\exiftool.exe" (
     set "PATH=!CD!\exiftool;!PATH!"
 ) else (
     if !EXIFTOOL_EXISTS! EQU 0 (
-        echo [INFO] Downloading exiftool...
+        echo [INFO] exiftool not found, downloading...
         if not exist "exiftool" mkdir exiftool
         
-        REM Download exiftool (Windows version)
-        REM Note: User may need to download manually or use a package manager
-        echo [WARNING] Please download exiftool manually from:
-        echo https://exiftool.org/
-        echo Extract exiftool(-k^).exe to the exiftool\ directory and rename it to exiftool.exe
-        echo.
-        pause
+        REM Download exiftool from GitHub releases
+        set "EXIFTOOL_URL=https://github.com/Deaquay/CharCardView/releases/download/exiftool/exiftool.exe"
+        set "EXIFTOOL_PATH=exiftool\exiftool.exe"
+        
+        REM Try curl first (available on Windows 10+)
+        where curl >nul 2>&1
+        if !ERRORLEVEL! EQU 0 (
+            echo [INFO] Downloading with curl...
+            curl -L -o "!EXIFTOOL_PATH!" "!EXIFTOOL_URL!"
+        ) else (
+            REM Fall back to PowerShell
+            echo [INFO] Downloading with PowerShell...
+            powershell -Command "Invoke-WebRequest -Uri '!EXIFTOOL_URL!' -OutFile '!EXIFTOOL_PATH!'"
+        )
+        
+        if exist "!EXIFTOOL_PATH!" (
+            echo [OK] exiftool downloaded successfully
+            set "PATH=!CD!\exiftool;!PATH!"
+        ) else (
+            echo [ERROR] Failed to download exiftool
+            echo Please download manually from: !EXIFTOOL_URL!
+            pause
+            exit /b 1
+        )
     )
 )
 
