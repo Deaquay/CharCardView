@@ -34,12 +34,19 @@ A Python desktop application for viewing character cards stored as PNG files wit
    - Install required dependencies (PySide6, Pillow)
    - Download exiftool if missing
 
+2. **(Optional manual installation)**:
+   Manual steps:
+   - Create venv
+   - Install Requirements
+   - Make sure exiftool.exe is in path or [download](https://github.com/Deaquay/CharCardView/releases/download/exiftool/exiftool.exe) it to exiftool/
+
 ## Usage
 
 1. **Start the application**:
    ```batch
    start.bat
    ```
+   or activate venv and run with `python main.py`
 
 2. **Select a folder**:
    - Click `File → Select Folder...` (or press `Ctrl+O`)
