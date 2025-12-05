@@ -26,7 +26,7 @@ A Python desktop application for viewing character cards stored as PNG files wit
    ```
 
    This script will:
-   - Check for exiftool in PATH or download instructions
+   - Check for exiftool in PATH
    - Check for `uv` package manager (falls back to `pip` if not available)
    - Create a virtual environment
    - Install required dependencies (PySide6, Pillow)
@@ -84,7 +84,11 @@ CharCardView/
 │   │   └── character_card.py  # Character card model
 │   └── utils/              # Utilities
 │       └── image_utils.py  # Thumbnail generation
-└── exiftool/               # exiftool binary (optional)
+├── exiftool/               # exiftool binary (optional)
+└── images/
+    ├── icon.ico			# Icon
+    ├── icon.png			# Icon
+    └── main.png			# UI
 ```
 
 ## Keyboard Shortcuts

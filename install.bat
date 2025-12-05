@@ -85,7 +85,7 @@ if !USE_UV! EQU 1 (
         uv venv
     )
     echo [INFO] Installing dependencies with uv...
-    uv sync
+    uv pip install -r requirements.txt
 ) else (
     echo [INFO] Using pip for package management
     if not exist "venv" (

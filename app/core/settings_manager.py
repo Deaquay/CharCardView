@@ -91,4 +91,18 @@ class SettingsManager:
         """
         self.settings["splitterPosition"] = positions
         self._saveSettings()
+    
+    def getLastFolder(self) -> Optional[str]:
+        """Get last opened folder path."""
+        return self.settings.get("lastFolder", None)
+    
+    def setLastFolder(self, folderPath: str):
+        """
+        Set last opened folder path.
+        
+        Args:
+            folderPath: Path to folder
+        """
+        self.settings["lastFolder"] = folderPath
+        self._saveSettings()
 

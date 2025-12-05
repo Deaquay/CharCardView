@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QSplitter,
-    QFileDialog, QSlider, QLabel, QToolBar, QStatusBar
+    QFileDialog, QSlider, QLabel, QToolBar, QStatusBar, QPushButton
 )
 from PySide6.QtCore import Qt, QThread, Signal, QObject
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QIcon
 
 from app.models.character_card import CharacterCard
 from app.core.exif_extractor import ExifExtractor
@@ -15,6 +15,7 @@ from app.core.card_parser import CardParser
 from app.core.settings_manager import SettingsManager
 from app.gui.thumbnail_grid import ThumbnailGrid
 from app.gui.data_panel import DataPanel
+from app.gui.loading_overlay import LoadingOverlay
 
 
 class ExifExtractionWorker(QObject):
@@ -61,6 +62,11 @@ class MainWindow(QMainWindow):
         """Set up the UI."""
         self.setWindowTitle("Character Card Viewer")
         
+        # Set window icon
+        iconPath = Path(__file__).parent.parent.parent / "images" / "icon.ico"
+        if iconPath.exists():
+            self.setWindowIcon(QIcon(str(iconPath)))
+        
         # Central widget
         centralWidget = QWidget()
         self.setCentralWidget(centralWidget)
@@ -98,6 +104,13 @@ class MainWindow(QMainWindow):
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
         self.statusBar.showMessage("Ready")
+        
+        # Loading overlay (parent to central widget so it overlays content)
+        self.loadingOverlay = LoadingOverlay(centralWidget)
+        
+        # Connect thumbnail grid signals
+        self.thumbnailGrid.refreshStarted.connect(self._onRefreshStarted)
+        self.thumbnailGrid.refreshFinished.connect(self._onRefreshFinished)
     
     def _createMenuBar(self):
         """Create menu bar."""
@@ -139,12 +152,19 @@ class MainWindow(QMainWindow):
         self.thumbnailSlider.setValue(self.settings.getThumbnailSize())
         self.thumbnailSlider.setTickPosition(QSlider.TicksBelow)
         self.thumbnailSlider.setTickInterval(50)
-        self.thumbnailSlider.sliderReleased.connect(self._onThumbnailSliderReleased)
+        self.thumbnailSlider.setFixedWidth(200)
         toolbar.addWidget(self.thumbnailSlider)
         
         self.sizeLabel = QLabel(str(self.thumbnailSlider.value()))
+        self.sizeLabel.setFixedWidth(30)
         self.thumbnailSlider.valueChanged.connect(lambda v: self.sizeLabel.setText(str(v)))
         toolbar.addWidget(self.sizeLabel)
+        
+        # Apply button for thumbnail size
+        self.applyButton = QPushButton("Apply")
+        self.applyButton.setFixedWidth(60)
+        self.applyButton.clicked.connect(self._onApplyThumbnailSize)
+        toolbar.addWidget(self.applyButton)
         
         # Initialize thumbnail grid with saved size
         self.thumbnailGrid.setThumbnailSize(self.settings.getThumbnailSize())
@@ -153,28 +173,42 @@ class MainWindow(QMainWindow):
         """Load window settings."""
         width, height = self.settings.getWindowGeometry()
         self.resize(width, height)
+        
+        # Auto-load last folder if available
+        lastFolder = self.settings.getLastFolder()
+        if lastFolder and Path(lastFolder).exists():
+            self.currentDirectory = lastFolder
+            self.statusBar.showMessage("Loading last folder...")
+            self._extractAndLoadCards(lastFolder)
     
     def _onSplitterMoved(self, pos: int, index: int):
         """Handle splitter movement."""
         sizes = self.splitter.sizes()
         self.settings.setSplitterPosition(sizes)
     
-    def _onThumbnailSliderReleased(self):
-        """Handle thumbnail slider release (only update on release for performance)."""
+    def _onApplyThumbnailSize(self):
+        """Handle Apply button click - update thumbnail size."""
         value = self.thumbnailSlider.value()
         self.settings.setThumbnailSize(value)
         self.thumbnailGrid.setThumbnailSize(value)
+        self.statusBar.showMessage(f"Thumbnail size set to {value}px")
     
     def _selectFolder(self):
         """Select folder containing character cards."""
+        # Use last folder as starting directory if available
+        startDir = self.settings.getLastFolder()
+        if not startDir or not Path(startDir).exists():
+            startDir = str(Path.home())
+        
         directory = QFileDialog.getExistingDirectory(
             self,
             "Select Folder with Character Cards",
-            str(Path.home())
+            startDir
         )
         
         if directory:
             self.currentDirectory = directory
+            self.settings.setLastFolder(directory)
             self.statusBar.showMessage("Extracting EXIF data...")
             self._extractAndLoadCards(directory)
     
@@ -185,6 +219,9 @@ class MainWindow(QMainWindow):
         Args:
             directoryPath: Path to directory
         """
+        # Show loading overlay
+        self.loadingOverlay.showOverlay("Extracting EXIF data...")
+        
         # Create worker thread
         self.workerThread = QThread()
         self.worker = ExifExtractionWorker(directoryPath)
@@ -201,6 +238,8 @@ class MainWindow(QMainWindow):
     
     def _onExtractionFinished(self, exifData: dict):
         """Handle EXIF extraction completion."""
+        self.loadingOverlay.setMessage("Parsing character data...")
+        
         self.cards = []
         
         for filePath, base64Data in exifData.items():
@@ -209,12 +248,22 @@ class MainWindow(QMainWindow):
                 if card:
                     self.cards.append(card)
         
+        # Grid will emit refreshStarted/refreshFinished signals
         self.thumbnailGrid.setCards(self.cards)
         self.statusBar.showMessage(f"Loaded {len(self.cards)} character cards")
     
     def _onExtractionError(self, errorMsg: str):
         """Handle EXIF extraction error."""
+        self.loadingOverlay.hideOverlay()
         self.statusBar.showMessage(f"Error: {errorMsg}")
+    
+    def _onRefreshStarted(self):
+        """Handle thumbnail grid refresh start."""
+        self.loadingOverlay.showOverlay("Rebuilding thumbnails...")
+    
+    def _onRefreshFinished(self):
+        """Handle thumbnail grid refresh completion."""
+        self.loadingOverlay.hideOverlay()
     
     def _onThumbnailClicked(self, filePath: str):
         """
@@ -235,6 +284,12 @@ class MainWindow(QMainWindow):
     def _showThumbnailSizeDialog(self):
         """Show thumbnail size dialog (already handled by slider)."""
         self.thumbnailSlider.setFocus()
+    
+    def resizeEvent(self, event):
+        """Handle window resize to update overlay position."""
+        super().resizeEvent(event)
+        if hasattr(self, "loadingOverlay"):
+            self.loadingOverlay.setGeometry(self.centralWidget().rect())
     
     def closeEvent(self, event):
         """Handle window close event."""

@@ -14,6 +14,7 @@ class CharacterCard:
     scenario: str
     firstMes: str
     alternateGreetings: List[str]
+    tags: List[str]
     filePath: str
     
     @classmethod
@@ -50,10 +51,15 @@ class CharacterCard:
             scenario = getField("scenario", "")
             firstMes = getField("first_mes", "")
             alternateGreetings = getField("alternate_greetings", [])
+            tags = getField("tags", [])
             
             # Ensure alternateGreetings is a list
             if not isinstance(alternateGreetings, list):
                 alternateGreetings = []
+            
+            # Ensure tags is a list
+            if not isinstance(tags, list):
+                tags = []
             
             return cls(
                 name=name if name else "Unknown",
@@ -62,6 +68,7 @@ class CharacterCard:
                 scenario=scenario if scenario else "",
                 firstMes=firstMes if firstMes else "",
                 alternateGreetings=alternateGreetings,
+                tags=tags,
                 filePath=filePath
             )
         except Exception as e:

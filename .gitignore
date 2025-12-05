@@ -35,3 +35,6 @@ build/
 
 # uv
 uv.lock
+
+# git
+.git/

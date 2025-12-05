@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
 from app.models.character_card import CharacterCard
+from app.gui.flow_layout import FlowLayout
 
 
 class DataPanel(QWidget):
@@ -95,6 +96,10 @@ class DataPanel(QWidget):
         nameLabel.setWordWrap(True)
         self.contentLayout.addWidget(nameLabel)
         
+        # Tags (if any)
+        if card.tags:
+            self._addTagsSection(card.tags)
+        
         # Description
         if card.description:
             self._addSection("Description", card.description)
@@ -133,6 +138,35 @@ class DataPanel(QWidget):
         contentLabel.setWordWrap(True)
         contentLabel.setStyleSheet("padding: 5px;")
         self.contentLayout.addWidget(contentLabel)
+    
+    def _addTagsSection(self, tags: list):
+        """
+        Add tags section with styled tag badges.
+        
+        Args:
+            tags: List of tag strings
+        """
+        # Create a container with flow layout for wrapping tags
+        tagsContainer = QWidget()
+        tagsLayout = FlowLayout(margin=0, hSpacing=6, vSpacing=6)
+        
+        for tag in tags:
+            if not tag:
+                continue
+            tagLabel = QLabel(str(tag))
+            tagLabel.setStyleSheet("""
+                QLabel {
+                    background-color: #3a6ea5;
+                    color: white;
+                    padding: 4px 10px;
+                    border-radius: 12px;
+                    font-size: 11px;
+                }
+            """)
+            tagsLayout.addWidget(tagLabel)
+        
+        tagsContainer.setLayout(tagsLayout)
+        self.contentLayout.addWidget(tagsContainer)
     
     def _addGreetingSection(self, card: CharacterCard):
         """

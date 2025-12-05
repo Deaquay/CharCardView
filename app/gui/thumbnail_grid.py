@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QScrollArea, QGridLayout,
     QPushButton, QLabel
 )
-from PySide6.QtCore import Qt, QSize, Signal, QTimer
+from PySide6.QtCore import Qt, QSize, Signal, QTimer, QCoreApplication
 from PySide6.QtGui import QPixmap, QImage
 
 from app.models.character_card import CharacterCard
@@ -120,6 +120,11 @@ class ThumbnailGrid(QWidget):
     """Scrollable grid of character card thumbnails."""
     
     thumbnailClicked = Signal(str)  # Emits file path when thumbnail is clicked
+    refreshStarted = Signal()  # Emitted when grid refresh starts
+    refreshFinished = Signal()  # Emitted when grid refresh completes
+    
+    # Batch size for chunked loading (process this many items then yield to event loop)
+    BATCH_SIZE = 5
     
     def __init__(self, parent=None):
         """
@@ -135,6 +140,9 @@ class ThumbnailGrid(QWidget):
         self.selectedItem: Optional[ThumbnailItem] = None
         self._resizeTimer: Optional[QTimer] = None
         self._lastWidth = 0
+        self._buildIndex = 0
+        self._buildColumns = 1
+        self._isBuilding = False
         
         self._setupUi()
     
@@ -168,6 +176,7 @@ class ThumbnailGrid(QWidget):
             size: Thumbnail size in pixels
         """
         self.thumbnailSize = max(50, min(500, size))
+        self._cancelBuild()
         self._refreshGrid()
     
     def setCards(self, cards: List[CharacterCard]):
@@ -178,27 +187,66 @@ class ThumbnailGrid(QWidget):
             cards: List of CharacterCard instances
         """
         self.cards = sorted(cards, key=lambda c: c.name.lower())
+        self._cancelBuild()
         self._refreshGrid()
     
+    def _cancelBuild(self):
+        """Cancel any in-progress thumbnail build."""
+        if self._isBuilding:
+            self._isBuilding = False
+    
     def _refreshGrid(self):
-        """Refresh the thumbnail grid."""
+        """Refresh the thumbnail grid using chunked loading for responsiveness."""
+        # Prevent concurrent builds
+        if self._isBuilding:
+            return
+        
+        self._isBuilding = True
+        
+        # Emit signal and process events so overlay can show
+        self.refreshStarted.emit()
+        QCoreApplication.processEvents()
+        
         # Clear existing items
         for item in self.thumbnailItems:
             item.deleteLater()
         self.thumbnailItems.clear()
         self.selectedItem = None
         
-        # Add new items
-        columns = max(1, self.width() // (self.thumbnailSize + 20))
+        # Setup for chunked building
+        self._buildColumns = max(1, self.width() // (self.thumbnailSize + 20))
+        self._buildIndex = 0
         
-        for row, card in enumerate(self.cards):
-            col = row % columns
-            rowIndex = row // columns
+        # Start building in chunks
+        QTimer.singleShot(10, self._buildNextBatch)
+    
+    def _buildNextBatch(self):
+        """Build the next batch of thumbnail items."""
+        if not self._isBuilding:
+            return
+        
+        endIndex = min(self._buildIndex + self.BATCH_SIZE, len(self.cards))
+        
+        for i in range(self._buildIndex, endIndex):
+            card = self.cards[i]
+            col = i % self._buildColumns
+            rowIndex = i // self._buildColumns
             
             item = ThumbnailItem(card.filePath, card, self.thumbnailSize, self.gridWidget)
             item.clicked.connect(self._onThumbnailClicked)
             self.gridLayout.addWidget(item, rowIndex, col)
             self.thumbnailItems.append(item)
+        
+        self._buildIndex = endIndex
+        
+        # Check if more items to process
+        if self._buildIndex < len(self.cards):
+            # Schedule next batch, allowing event loop to run (keeps spinner alive)
+            QTimer.singleShot(1, self._buildNextBatch)
+        else:
+            # Done building
+            self._isBuilding = False
+            self.refreshFinished.emit()
     
     def _onThumbnailClicked(self, filePath: str):
         """
