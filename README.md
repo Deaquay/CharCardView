@@ -2,6 +2,8 @@
 
 A Python desktop application for viewing character cards stored as PNG files with embedded EXIF metadata. Character card information is typically stored as Base64-encoded JSON in PNG EXIF data, which makes it difficult to browse and view. This application provides a user-friendly interface to view thumbnails and character information.
 
+![Preview](/images/main.png)
+
 ## Features
 
 - **Thumbnail Grid View**: Browse character cards in a scrollable grid with thumbnails
