@@ -4,6 +4,10 @@ A Python desktop application for viewing character cards stored as PNG files wit
 
 ![Preview](/images/main.png)
 
+You can have large thumbnails:
+
+![Preview2](/images/main2.png)
+
 ## Features
 
 - **Thumbnail Grid View**: Browse character cards in a scrollable grid with thumbnails
