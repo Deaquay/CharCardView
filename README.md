@@ -34,7 +34,7 @@ You can have large thumbnails:
    This script will:
    - Check for exiftool in PATH
    - Check for `uv` package manager (falls back to `pip` if not available)
-   - Create a virtual environment
+   - Create a virtual environment (skipped if active conda env is detected)
    - Install required dependencies (PySide6, Pillow)
    - Download exiftool if missing
 

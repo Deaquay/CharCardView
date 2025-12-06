@@ -38,3 +38,6 @@ uv.lock
 
 # git
 .git/
+
+# Custom start file ()
+start_custom.bat

@@ -77,23 +77,10 @@ if %ERRORLEVEL% NEQ 0 (
 python --version
 echo.
 
-REM Create virtual environment if needed
-if !USE_UV! EQU 1 (
-    echo [INFO] Using uv for package management
-    if not exist ".venv" (
-        echo [INFO] Creating virtual environment with uv...
-        uv venv
-    )
-    echo [INFO] Installing dependencies with uv...
-    uv pip install -r requirements.txt
-) else (
-    echo [INFO] Using pip for package management
-    if not exist "venv" (
-        echo [INFO] Creating virtual environment...
-        python -m venv venv
-    )
-    echo [INFO] Activating virtual environment...
-    call venv\Scripts\activate.bat
+REM Check if conda environment is active
+if defined CONDA_PREFIX (
+    echo [OK] Conda environment detected: %CONDA_PREFIX%
+    echo [INFO] Skipping venv creation, using conda environment
     echo [INFO] Installing dependencies with pip...
     
     REM Create requirements.txt from pyproject.toml if it doesn't exist
@@ -104,6 +91,35 @@ if !USE_UV! EQU 1 (
     )
     
     pip install -r requirements.txt
+) else (
+    REM Create virtual environment if needed
+    if !USE_UV! EQU 1 (
+        echo [INFO] Using uv for package management
+        if not exist ".venv" (
+            echo [INFO] Creating virtual environment with uv...
+            uv venv
+        )
+        echo [INFO] Installing dependencies with uv...
+        uv pip install -r requirements.txt
+    ) else (
+        echo [INFO] Using pip for package management
+        if not exist "venv" (
+            echo [INFO] Creating virtual environment...
+            python -m venv venv
+        )
+        echo [INFO] Activating virtual environment...
+        call venv\Scripts\activate.bat
+        echo [INFO] Installing dependencies with pip...
+        
+        REM Create requirements.txt from pyproject.toml if it doesn't exist
+        if not exist "requirements.txt" (
+            echo [INFO] Creating requirements.txt...
+            echo PySide6>=6.6.0 > requirements.txt
+            echo Pillow>=10.0.0 >> requirements.txt
+        )
+        
+        pip install -r requirements.txt
+    )
 )
 
 echo.

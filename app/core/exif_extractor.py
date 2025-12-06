@@ -4,8 +4,12 @@ import subprocess
 import json
 import tempfile
 import os
+import sys
 from typing import Dict, Optional, List, Callable
 from pathlib import Path
+
+# Windows-specific flag to hide console window
+SUBPROCESS_FLAGS = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
 
 
 class ExifExtractor:
@@ -30,7 +34,8 @@ class ExifExtractor:
                 ["exiftool", "-ver"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                check=True
+                check=True,
+                creationflags=SUBPROCESS_FLAGS
             )
             return "exiftool"
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -83,7 +88,8 @@ class ExifExtractor:
                     text=True,
                     encoding='utf-8',
                     errors='replace',
-                    timeout=300
+                    timeout=300,
+                    creationflags=SUBPROCESS_FLAGS
                 )
                 
                 if process.returncode == 0 and process.stdout.strip():
@@ -144,7 +150,8 @@ class ExifExtractor:
                 text=True,
                 encoding='utf-8',
                 errors='replace',
-                timeout=30
+                timeout=30,
+                creationflags=SUBPROCESS_FLAGS
             )
             
             if process.returncode == 0:
