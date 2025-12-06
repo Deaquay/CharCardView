@@ -8,6 +8,10 @@ You can have large thumbnails:
 
 ![Preview2](/images/main2.png)
 
+## Quick Start
+
+**For Windows users**: Download the standalone `CharCardView.exe` from [Releases](https://github.com/Deaquay/CharCardView/releases) — no installation required.
+
 ## Features
 
 - **Thumbnail Grid View**: Browse character cards in a scrollable grid with thumbnails
@@ -26,6 +30,12 @@ You can have large thumbnails:
 
 ## Installation
 
+### Option 1: Standalone Executable (Easiest)
+
+Download `CharCardView.exe` from [Releases](https://github.com/Deaquay/CharCardView/releases) and run it directly. No Python or dependencies required.
+
+### Option 2: From Source
+
 1. **Run the installation script**:
    ```batch
    install.bat
@@ -38,8 +48,7 @@ You can have large thumbnails:
    - Install required dependencies (PySide6, Pillow)
    - Download exiftool if missing
 
-2. **(Optional manual installation)**:
-   Manual steps:
+2. **(Optional) Manual installation**:
    - Create venv
    - Install Requirements
    - Make sure exiftool.exe is in path or [download](https://github.com/Deaquay/CharCardView/releases/download/exiftool/exiftool.exe) it to exiftool/
